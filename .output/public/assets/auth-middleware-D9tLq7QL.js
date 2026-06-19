@@ -1,0 +1,1 @@
+import{O as e}from"./index-D7X7Nb_u.js";var t=e({type:`function`});export{t};
