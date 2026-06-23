@@ -8,6 +8,46 @@ import { Button } from "@/components/ui/button";
 import { listServicesPublic } from "@/lib/public.functions";
 import { formatNGN } from "@/lib/clinic";
 import { Sparkles } from "lucide-react";
+import { motion } from 'framer-motion'
+import { useInView } from 'react-intersection-observer'
+import { ChevronRight } from 'lucide-react'
+
+function FadeInSection({
+  children,
+  delay = 0,
+}: {
+  children: React.ReactNode
+  delay?: number
+}) {
+  const [ref, inView] = useInView({
+    threshold: 0.15,
+    triggerOnce: true,
+  })
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{
+        opacity: 0,
+        y: 40,
+      }}
+      animate={
+        inView
+          ? {
+              opacity: 1,
+              y: 0,
+            }
+          : {}
+      }
+      transition={{
+        duration: 0.6,
+        delay,
+      }}
+    >
+      {children}
+    </motion.div>
+  )
+}
 
 export const Route = createFileRoute("/services")({
   head: () =>
@@ -27,10 +67,27 @@ function Services() {
   return (
     <SiteLayout>
       <section className="mx-auto max-w-6xl px-4 py-16">
-        <h1 className="font-serif text-4xl font-semibold md:text-5xl">Services & pricing</h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">Clear, fair pricing for every treatment. Final costs are confirmed after consultation.</p>
+        <FadeInSection>
+          <nav
+                        aria-label="Breadcrumb"
+                        className="mb-8 mt-[-4] flex items-center gap-2 text-sm text-black/80"
+                      >
+                        <Link to="/" className="transition hover:text-black">
+                          Home
+                        </Link>
+          
+                        <ChevronRight className="h-4 w-4" />
+          
+                        <span className="font-medium text-black"> Services</span>
+                  </nav>
+          <h1 className="font-serif text-4xl font-semibold md:text-5xl">Services & pricing</h1>
+        </FadeInSection>
+        <FadeInSection delay={0.2}>
+          <p className="mt-3 max-w-2xl text-muted-foreground">Clear, fair pricing for every treatment. Final costs are confirmed after consultation.</p>
+        </FadeInSection>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+       <FadeInSection>
+         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((s) => (
             <Card key={s.id} className="rounded-2xl border-border/70 transition-shadow hover:shadow-[var(--shadow-soft)]">
               <CardContent className="p-6">
@@ -52,6 +109,7 @@ function Services() {
             </Card>
           ))}
         </div>
+       </FadeInSection>
       </section>
     </SiteLayout>
   );

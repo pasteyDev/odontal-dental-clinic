@@ -9,6 +9,8 @@ lerna-debug.log*
 .env
 .vscode
 node_modules
+supabase
+.output
 dist
 dist-ssr
 .vinxi

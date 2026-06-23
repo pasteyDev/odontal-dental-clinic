@@ -1,1 +1,0 @@
-var e=`/assets/odontal-logo-2-DqHTb2J4.png`;export{e as t};

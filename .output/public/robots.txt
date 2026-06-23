@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-
-# Sitemap (replace with your full URL or ensure VITE_PUBLIC_SITE_URL is set and a dynamic sitemap is generated)
-Sitemap: https://your-site.example/sitemap.xml
-Host: https://your-site.example

@@ -43,16 +43,40 @@ function Analytics() {
 
       <Card className="mt-5 rounded-2xl"><CardContent className="p-5">
         <h2 className="font-serif text-lg font-semibold">Demand by service</h2>
-        <div className="mt-4 h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data.byService} layout="vertical" margin={{ left: 80 }}>
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={140} />
-              <Tooltip />
-              <Bar dataKey="value" fill="oklch(0.7 0.13 230)" radius={[0,6,6,0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <div className="mt-4 h-72 min-w-0">
+  <LazyRecharts>
+    {(R) => (
+      <R.ResponsiveContainer width="100%" height="100%">
+        <R.BarChart
+          data={data.byService}
+          layout="vertical"
+          margin={{ left: 80 }}
+        >
+          <R.XAxis
+            type="number"
+            allowDecimals={false}
+            tick={{ fontSize: 11 }}
+          />
+
+          <R.YAxis
+            type="category"
+            dataKey="name"
+            tick={{ fontSize: 11 }}
+            width={140}
+          />
+
+          <R.Tooltip />
+
+          <R.Bar
+            dataKey="value"
+            fill="oklch(0.7 0.13 230)"
+            radius={[0, 6, 6, 0]}
+          />
+        </R.BarChart>
+      </R.ResponsiveContainer>
+    )}
+  </LazyRecharts>
+</div>
       </CardContent></Card>
     </div>
   );

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { SiteLayout } from "@/components/site/SiteLayout";
@@ -12,6 +12,46 @@ import { CLINIC } from "@/lib/clinic";
 import { buildHead } from "@/lib/seo";
 import { Phone, Mail, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { motion } from 'framer-motion'
+import { useInView } from 'react-intersection-observer'
+import { ChevronRight } from 'lucide-react'
+
+function FadeInSection({
+  children,
+  delay = 0,
+}: {
+  children: React.ReactNode
+  delay?: number
+}) {
+  const [ref, inView] = useInView({
+    threshold: 0.15,
+    triggerOnce: true,
+  })
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{
+        opacity: 0,
+        y: 40,
+      }}
+      animate={
+        inView
+          ? {
+              opacity: 1,
+              y: 0,
+            }
+          : {}
+      }
+      transition={{
+        duration: 0.6,
+        delay,
+      }}
+    >
+      {children}
+    </motion.div>
+  )
+}
 
 export const Route = createFileRoute("/contact")({
   head: () =>
@@ -31,10 +71,27 @@ function Contact() {
   return (
     <SiteLayout>
       <section className="mx-auto max-w-6xl px-4 py-16">
-        <h1 className="font-serif text-4xl font-semibold md:text-5xl">Get in touch</h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">Questions about treatment, pricing or directions? We're happy to help.</p>
+        <FadeInSection>
+          <nav
+                        aria-label="Breadcrumb"
+                        className="mb-8 mt-[-4] flex items-center gap-2 text-sm text-black/80"
+                      >
+                        <Link to="/" className="transition hover:text-black">
+                          Home
+                        </Link>
+          
+                        <ChevronRight className="h-4 w-4" />
+          
+                        <span className="font-medium text-black"> Contact</span>
+                  </nav>
+          <h1 className="font-serif text-4xl font-semibold md:text-5xl">Get in touch</h1>
+        </FadeInSection>
+        <FadeInSection delay={0.2}>
+          <p className="mt-3 max-w-2xl text-muted-foreground">Questions about treatment, pricing or directions? We're happy to help.</p>
+        </FadeInSection>
 
-        <div className="mt-10 grid gap-8 md:grid-cols-2">
+        <FadeInSection>
+          <div className="mt-10 grid gap-8 md:grid-cols-2">
           <Card className="rounded-2xl">
             <CardContent className="p-6">
               <ul className="space-y-4 text-sm">
@@ -77,6 +134,7 @@ function Contact() {
             </CardContent>
           </Card>
         </div>
+        </FadeInSection>
       </section>
     </SiteLayout>
   );

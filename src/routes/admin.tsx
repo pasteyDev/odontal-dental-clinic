@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
 import ReauthGuard from "@/components/admin/ReauthGuard";
-import { LayoutDashboard, MessageSquare, CalendarCheck, Users, Mail, Megaphone, Settings, UserCog, LogOut, BarChart3 } from "lucide-react";
+import { LayoutDashboard, MessageSquare, CalendarCheck, Edit3, Users, Mail, Megaphone, Settings, UserCog, LogOut, BarChart3 } from "lucide-react";
 import logo from "@/assets/odontal-logo-2.png";
 
 export const Route = createFileRoute("/admin")({
@@ -26,6 +26,7 @@ const NAV: NavItem[] = [
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/services", label: "Services", icon: Settings },
   { to: "/admin/staff", label: "Staff", icon: UserCog },
+  { to: "/admin/blogs", label: "Blogs", icon: Edit3 },
   { to: "/admin/reviews", label: "Reviews", icon: MessageSquare },
 ];
 

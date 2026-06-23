@@ -19,7 +19,7 @@ Per-route SEO `head()` with unique title/description/og. JSON-LD `Dentist` schem
 ## Newsletter
 - Footer + dedicated section form (email). Stored in `newsletter_subscribers`. Double-opt-in not needed for v1; simple confirmation toast.
 
-## Backend (Lovable Cloud)
+## Backend (Supabase Cloud)
 Tables:
 - `services` (id, name, description, price_ngn, duration_min, active, sort_order)
 - `bookings` (id, service_id, patient_name, phone, email, preferred_date, preferred_time, notes, status [pending/confirmed/completed/cancelled], created_at, assigned_to)

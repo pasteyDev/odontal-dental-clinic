@@ -10,9 +10,10 @@ const NAV = [
   { to: "/", label: "Home" },
   { to: "/about", label: "About" },
   { to: "/services", label: "Services" },
-  { to: "/book", label: "Book" },
+  // { to: "/book", label: "Book" },
   { to: "/contact", label: "Contact" },
   { to: "/faq", label: "FAQ" },
+  { to: "/blogs", label: "Blogs" },
 ] as const;
 
 export function SiteHeader() {

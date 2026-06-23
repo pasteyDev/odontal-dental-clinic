@@ -13,6 +13,8 @@ export const CLINIC = {
   mapsEmbed:
     "https://www.google.com/maps?q=21+Agbebi+St,+Ijesha+Rd,+Surulere,+Lagos&output=embed",
   instagram: "https://instagram.com/odontaldentalclinicng",
+  xTwitter: "https://x.com/odontaldentalclinicng",
+  facebook: "https://facebook.com/odontaldentalclinicng",
   hours: [
     { day: "Monday", open: "8:00 AM – 8:00 PM" },
     { day: "Tuesday", open: "8:00 AM – 8:00 PM" },
