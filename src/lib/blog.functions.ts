@@ -260,24 +260,29 @@ export const updatePost = createServerFn({ method: "POST" })
   .validator((d: unknown) => updatePostSchema.parse(d))
   .handler(async ({ data }) => {
     const payload = data as any;
-    const { error: uErr } = await supabaseAdmin.from("blog_posts").update({
-      title: payload.title,
-      slug: payload.slug,
-      excerpt: payload.excerpt || null,
-      content: payload.content,
-      content_markdown: payload.content_markdown || null,
-      hero_image: payload.hero_image || null,
-      author_id: payload.author_id || null,
-      status: payload.status || "draft",
-      published_at: payload.published_at || null,
-      scheduled_for: payload.scheduled_for || null,
-      meta_title: payload.meta_title || null,
-      meta_description: payload.meta_description || null,
-      seo_image: payload.seo_image || null,
-    }).eq("id", payload.id);
+    const now = new Date().toISOString();
+
+    const { error: uErr } = await supabaseAdmin
+      .from("blog_posts")
+      .update({
+        title: payload.title,
+        slug: payload.slug,
+        excerpt: payload.excerpt || null,
+        content: payload.content,
+        content_markdown: payload.content_markdown || null,
+        hero_image: payload.hero_image || null,
+        author_id: payload.author_id || null,
+        status: "published",          // ← always published
+        published_at: now,            // ← always now
+        scheduled_for: null,          // ← clear any schedule
+        deleted_at: null,             // ← un-delete if previously soft-deleted
+        meta_title: payload.meta_title || null,
+        meta_description: payload.meta_description || null,
+        seo_image: payload.seo_image || null,
+      })
+      .eq("id", payload.id);
     if (uErr) throw new Error(uErr.message);
 
-    // Replace categories/tags relationships
     if (payload.category_ids) {
       await supabaseAdmin.from("blog_post_categories").delete().eq("post_id", payload.id);
       if (payload.category_ids.length > 0) {
@@ -304,9 +309,16 @@ const deleteSchema = z.object({ id: z.string().uuid() });
 export const deletePost = createServerFn({ method: "POST" })
   .validator((d: unknown) => deleteSchema.parse(d))
   .handler(async ({ data }) => {
-    const now = new Date().toISOString();
-    const { error } = await supabaseAdmin.from("blog_posts").update({ deleted_at: now, status: 'archived' }).eq("id", data.id);
+    const { id } = data;
+
+    // Remove junction rows first (foreign-key safety)
+    await supabaseAdmin.from("blog_post_categories").delete().eq("post_id", id);
+    await supabaseAdmin.from("blog_post_tags").delete().eq("post_id", id);
+
+    // Hard-delete the post
+    const { error } = await supabaseAdmin.from("blog_posts").delete().eq("id", id);
     if (error) throw new Error(error.message);
+
     return { ok: true };
   });
 

@@ -56,7 +56,7 @@ function AdminLayout() {
   return (
     <div className="flex min-h-screen bg-[color:var(--cream)]">
       <Toaster position="top-center" richColors />
-      <ReauthGuard timeoutMinutes={1} />
+      <ReauthGuard timeoutMinutes={10} />
       <aside className="hidden w-64 shrink-0 border-r border-border bg-background p-4 md:block">
         <Link to="/" className="flex items-center gap-2 px-2 py-2 font-serif text-xl font-semibold text-primary">
           <span className="inline-flex h-15 w-15 items-center justify-center rounded-full bg-background text-primary-foreground"><img src={logo} alt="Odontal Dental Clinic Logo" /></span>
