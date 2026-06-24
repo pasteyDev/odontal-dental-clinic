@@ -5,6 +5,46 @@ import { z } from "zod";
 import { unsubscribeByToken } from "@/lib/email.functions";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { Button } from "@/components/ui/button";
+import { motion } from 'framer-motion'
+import { useInView } from 'react-intersection-observer'
+import { ChevronRight } from 'lucide-react'
+
+function FadeInSection({
+  children,
+  delay = 0,
+}: {
+  children: React.ReactNode
+  delay?: number
+}) {
+  const [ref, inView] = useInView({
+    threshold: 0.15,
+    triggerOnce: true,
+  })
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{
+        opacity: 0,
+        y: 40,
+      }}
+      animate={
+        inView
+          ? {
+              opacity: 1,
+              y: 0,
+            }
+          : {}
+      }
+      transition={{
+        duration: 0.6,
+        delay,
+      }}
+    >
+      {children}
+    </motion.div>
+  )
+}
 
 const searchSchema = z.object({ token: z.string().optional() });
 
@@ -38,7 +78,20 @@ function Unsubscribe() {
 
   return (
     <SiteLayout>
-      <section className="mx-auto max-w-xl px-4 py-24 text-center">
+      <FadeInSection>
+        <section className="mx-auto max-w-xl px-4 py-24 text-center">
+          <nav
+            aria-label="Breadcrumb"
+            className="mb-8 mt-[-4] flex items-center gap-2 text-sm text-black/80"
+          >
+            <Link to="/" className="transition hover:text-black">
+              Home
+            </Link>
+
+            <ChevronRight className="h-4 w-4" />
+
+            <span className="font-medium text-black">Unsubscribe</span>
+          </nav>
         <h1 className="font-serif text-3xl font-semibold">
           {status === "success" ? "Email preferences updated" : "Unsubscribe"}
         </h1>
@@ -47,6 +100,7 @@ function Unsubscribe() {
           <Link to="/">Back to home</Link>
         </Button>
       </section>
+      </FadeInSection>
     </SiteLayout>
   );
 }
