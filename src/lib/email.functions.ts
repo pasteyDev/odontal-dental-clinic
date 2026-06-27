@@ -4,26 +4,11 @@ import process from "node:process";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { loadUserRoles, requireAnyRole } from "@/lib/admin-auth";
 import { getEmailConfig, sendBrevoEmail } from "@/lib/email.server";
 
 const campaignKindSchema = z.enum(["newsletter", "review_request", "custom"]);
 const GROUP_EMAIL_ROLES = ["admin", "receptionist"] as const;
-
-async function loadRoles(userId: string) {
-  const { data, error } = await supabaseAdmin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId);
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((r) => r.role as "admin" | "staff" | "receptionist");
-}
-
-function requireAnyRole(
-  roles: Array<"admin" | "staff" | "receptionist">,
-  allowed: ReadonlyArray<"admin" | "staff" | "receptionist">,
-) {
-  if (!roles.some((role) => allowed.includes(role))) throw new Error("Forbidden");
-}
 
 function getSiteOrigin() {
   const configured = process.env.VITE_PUBLIC_SITE_URL;
@@ -117,8 +102,8 @@ async function refreshCampaignStats(campaignId: string) {
 export const listEmailCampaigns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const roles = await loadRoles(context.userId);
-    if (roles.length === 0) throw new Error("Forbidden");
+    const roles = await loadUserRoles(context.userId);
+    requireAnyRole(roles);
     const { data, error } = await supabaseAdmin
       .from("email_campaigns")
       .select("*")
@@ -141,7 +126,7 @@ export const createEmailCampaign = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
+    const roles = await loadUserRoles(context.userId);
     requireAnyRole(roles, GROUP_EMAIL_ROLES);
     const { data: created, error } = await supabaseAdmin
       .from("email_campaigns")
@@ -162,7 +147,7 @@ export const enqueueCampaignRecipients = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => z.object({ campaignId: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
+    const roles = await loadUserRoles(context.userId);
     requireAnyRole(roles, GROUP_EMAIL_ROLES);
 
     const { data: campaign, error: campaignError } = await supabaseAdmin
@@ -226,7 +211,7 @@ export const processEmailQueueBatch = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
+    const roles = await loadUserRoles(context.userId);
     requireAnyRole(roles, GROUP_EMAIL_ROLES);
 
     const { data: campaign, error: campaignError } = await supabaseAdmin
@@ -315,7 +300,7 @@ export const retryFailedEmails = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => z.object({ campaignId: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
+    const roles = await loadUserRoles(context.userId);
     requireAnyRole(roles, GROUP_EMAIL_ROLES);
     const { data: failedRows, error: readError } = await supabaseAdmin
       .from("email_queue")
@@ -339,7 +324,7 @@ export const cancelEmailCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => z.object({ campaignId: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
+    const roles = await loadUserRoles(context.userId);
     requireAnyRole(roles, GROUP_EMAIL_ROLES);
     const now = new Date().toISOString();
     const { error: queueError } = await supabaseAdmin
@@ -369,8 +354,8 @@ export const sendIndividualEmail = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
-    if (roles.length === 0) throw new Error("Forbidden");
+    const roles = await loadUserRoles(context.userId);
+    requireAnyRole(roles);
     const remainingDailySends = await getRemainingDailySends();
     if (remainingDailySends <= 0) throw new Error("Daily email limit reached. Try again tomorrow.");
 

@@ -2,25 +2,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-
-async function loadRoles(userId: string) {
-  const { data, error } = await supabaseAdmin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId);
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((r) => r.role as "admin" | "staff" | "receptionist");
-}
+import { loadUserRoles, requireAdminRole, requireAnyRole } from "@/lib/admin-auth";
 
 export const getMyRoles = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => loadRoles(context.userId));
+  .handler(async ({ context }) => loadUserRoles(context.userId));
 
 export const getDashboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const roles = await loadRoles(context.userId);
-    if (roles.length === 0) throw new Error("Forbidden: not staff");
+    const roles = await loadUserRoles(context.userId);
+    requireAnyRole(roles);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -98,8 +90,8 @@ export const getDashboard = createServerFn({ method: "GET" })
 export const listBookings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const roles = await loadRoles(context.userId);
-    if (roles.length === 0) throw new Error("Forbidden");
+    const roles = await loadUserRoles(context.userId);
+    requireAnyRole(roles);
     const { data, error } = await supabaseAdmin
       .from("bookings")
       .select("*,services(name,price_ngn)")
@@ -120,8 +112,8 @@ export const updateBookingStatus = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
-    if (roles.length === 0) throw new Error("Forbidden");
+    const roles = await loadUserRoles(context.userId);
+    requireAnyRole(roles);
     const { error } = await supabaseAdmin
       .from("bookings")
       .update({ status: data.status, updated_at: new Date().toISOString() })
@@ -133,8 +125,8 @@ export const updateBookingStatus = createServerFn({ method: "POST" })
 export const listPatients = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const roles = await loadRoles(context.userId);
-    if (roles.length === 0) throw new Error("Forbidden");
+    const roles = await loadUserRoles(context.userId);
+    requireAnyRole(roles);
     const { data, error } = await supabaseAdmin
       .from("patients")
       .select("*")
@@ -147,8 +139,8 @@ export const listPatients = createServerFn({ method: "GET" })
 export const listSubscribers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const roles = await loadRoles(context.userId);
-    if (roles.length === 0) throw new Error("Forbidden");
+    const roles = await loadUserRoles(context.userId);
+    requireAnyRole(roles);
     const { data, error } = await supabaseAdmin
       .from("newsletter_subscribers")
       .select("*")
@@ -160,8 +152,8 @@ export const listSubscribers = createServerFn({ method: "GET" })
 export const listMessages = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const roles = await loadRoles(context.userId);
-    if (roles.length === 0) throw new Error("Forbidden");
+    const roles = await loadUserRoles(context.userId);
+    requireAnyRole(roles);
     const { data, error } = await supabaseAdmin
       .from("contact_messages")
       .select("*")
@@ -174,8 +166,8 @@ export const listMessages = createServerFn({ method: "GET" })
 export const listReviewsAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const roles = await loadRoles(context.userId);
-    if (roles.length === 0) throw new Error("Forbidden");
+    const roles = await loadUserRoles(context.userId);
+    requireAnyRole(roles);
     const { data, error } = await supabaseAdmin
       .from("reviews")
       .select("*")
@@ -189,8 +181,8 @@ export const approveReview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
-    if (!roles.includes("admin")) throw new Error("Admin only");
+    const roles = await loadUserRoles(context.userId);
+    requireAdminRole(roles);
     const { error } = await supabaseAdmin
       .from("reviews")
       .update({ approved: true, approved_by: context.userId, approved_at: new Date().toISOString(), updated_at: new Date().toISOString() })
@@ -203,8 +195,8 @@ export const rejectReview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
-    if (!roles.includes("admin")) throw new Error("Admin only");
+    const roles = await loadUserRoles(context.userId);
+    requireAdminRole(roles);
     const { error } = await supabaseAdmin.from("reviews").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -216,8 +208,8 @@ export const toggleMessageHandled = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), handled: z.boolean() }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
-    if (roles.length === 0) throw new Error("Forbidden");
+    const roles = await loadUserRoles(context.userId);
+    requireAnyRole(roles);
     const { error } = await supabaseAdmin
       .from("contact_messages")
       .update({ handled: data.handled })
@@ -229,8 +221,8 @@ export const toggleMessageHandled = createServerFn({ method: "POST" })
 export const listAllServices = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const roles = await loadRoles(context.userId);
-    if (roles.length === 0) throw new Error("Forbidden");
+    const roles = await loadUserRoles(context.userId);
+    requireAnyRole(roles);
     const { data, error } = await supabaseAdmin
       .from("services")
       .select("*")
@@ -257,8 +249,8 @@ export const upsertService = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
-    if (!roles.includes("admin")) throw new Error("Admin only");
+    const roles = await loadUserRoles(context.userId);
+    requireAdminRole(roles);
     const payload = { ...data, updated_at: new Date().toISOString() };
     if (data.id) {
       const { error } = await supabaseAdmin.from("services").update(payload).eq("id", data.id);
@@ -274,8 +266,8 @@ export const deleteService = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
-    if (!roles.includes("admin")) throw new Error("Admin only");
+    const roles = await loadUserRoles(context.userId);
+    requireAdminRole(roles);
     const { error } = await supabaseAdmin.from("services").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -284,8 +276,8 @@ export const deleteService = createServerFn({ method: "POST" })
 export const listStaff = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const roles = await loadRoles(context.userId);
-    if (!roles.includes("admin")) throw new Error("Admin only");
+    const roles = await loadUserRoles(context.userId);
+    requireAdminRole(roles);
     const { data: ur, error } = await supabaseAdmin
       .from("user_roles")
       .select("user_id,role,created_at");
@@ -311,8 +303,8 @@ export const inviteStaff = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
-    if (!roles.includes("admin")) throw new Error("Admin only");
+    const roles = await loadUserRoles(context.userId);
+    requireAdminRole(roles);
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
       password: data.password,
@@ -340,8 +332,8 @@ export const updateStaffRole = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
-    if (!roles.includes("admin")) throw new Error("Admin only");
+    const roles = await loadUserRoles(context.userId);
+    requireAdminRole(roles);
     if (data.add) {
       const { error } = await supabaseAdmin
         .from("user_roles")
@@ -362,8 +354,8 @@ export const removeStaff = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => z.object({ user_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const roles = await loadRoles(context.userId);
-    if (!roles.includes("admin")) throw new Error("Admin only");
+    const roles = await loadUserRoles(context.userId);
+    requireAdminRole(roles);
     if (data.user_id === context.userId) throw new Error("You cannot remove yourself");
     await supabaseAdmin.from("user_roles").delete().eq("user_id", data.user_id);
     await supabaseAdmin.auth.admin.deleteUser(data.user_id);

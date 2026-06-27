@@ -10,12 +10,13 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
   async ({ next }) => {
     
     const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+    const SUPABASE_PUBLISHABLE_KEY =
+      process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
 
     if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
       const missing = [
         ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
-        ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
+        ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY / SUPABASE_ANON_KEY'] : []),
       ];
       const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase Cloud.`;
       console.error(`[Supabase] ${message}`);
@@ -38,7 +39,7 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
       throw new Error('Unauthorized: Only Bearer tokens are supported');
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.slice('Bearer '.length).trim();
     if (!token) {
       throw new Error('Unauthorized: No token provided');
     }

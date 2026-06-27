@@ -22,7 +22,7 @@ function Analytics() {
         <div className="mt-4 h-72">
           <LazyRecharts>
             {(R) => (
-              <R.ResponsiveContainer width="100%" height="100%">
+              <R.ResponsiveContainer width="100%" height={256}>
                 <R.AreaChart data={data.perDay}>
                   <defs>
                     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
@@ -46,7 +46,7 @@ function Analytics() {
         <div className="mt-4 h-72 min-w-0">
   <LazyRecharts>
     {(R) => (
-      <R.ResponsiveContainer width="100%" height="100%">
+      <R.ResponsiveContainer width="100%" height={256}>
         <R.BarChart
           data={data.byService}
           layout="vertical"

@@ -36,6 +36,7 @@ export interface BlogPostRow {
   content_markdown?: string | null;
   hero_image?: string | null;
   author_id?: string | null;
+  author_name?: string | null;
   reading_time?: number | null;
   status: PostStatus;
   published_at?: string | null;
@@ -56,6 +57,7 @@ export interface BlogPostInsert {
   content_markdown?: string | null;
   hero_image?: string | null;
   author_id?: string | null;
+  author_name?: string | null;
   status?: PostStatus;
   published_at?: string | null;
   scheduled_for?: string | null;

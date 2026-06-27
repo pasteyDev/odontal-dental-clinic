@@ -25,6 +25,7 @@ export default function BlogEditorClient({
 }) {
   const [title, setTitle] = useState(initial?.title ?? '')
   const [slug, setSlug] = useState(initial?.slug ?? '')
+  const [author_name, setAuthorName] = useState(initial?.author_name ?? '')
   const [excerpt, setExcerpt] = useState(initial?.excerpt ?? '')
   const [hero, setHero] = useState(initial?.hero_image ?? '')
   const [saving, setSaving] = useState(false)
@@ -45,6 +46,7 @@ export default function BlogEditorClient({
 
   useEffect(() => {
     if (!editor) return
+     if (editor.isDestroyed) return 
     editor.commands.setContent(
       initial?.content ?? initial?.content_markdown ?? '',
     )
@@ -52,7 +54,7 @@ export default function BlogEditorClient({
     setSlug(initial?.slug ?? '')
     setExcerpt(initial?.excerpt ?? '')
     setHero(initial?.hero_image ?? '')
-  }, [initial, editor])
+  }, [initial?.id, editor]) 
 
   async function handleInsertImage(file: File) {
     const base64 = await fileToBase64(file)
@@ -105,6 +107,7 @@ export default function BlogEditorClient({
             title,
             slug,
             excerpt,
+            author_name,
             content: contentJson,
             content_markdown: contentText,
             hero_image: hero,
@@ -116,6 +119,7 @@ export default function BlogEditorClient({
             title,
             slug,
             excerpt,
+            author_name,
             content: contentJson,
             content_markdown: contentText,
             hero_image: hero,
@@ -152,6 +156,16 @@ export default function BlogEditorClient({
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder="post-slug"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+            Author
+          </label>
+          <Input
+            value={author_name}
+            onChange={(e) => setAuthorName(e.target.value)}
+            placeholder="Author name"
           />
         </div>
       </div>

@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { loadUserRoles, requireAdminRole, requireAnyRole } from "@/lib/admin-auth";
 import type { BlogPostRow } from "./db/blog.types";
 
 const listPublicSchema = z.object({
@@ -52,7 +54,7 @@ export const listPostsPublic = createServerFn({ method: "POST" })
     // Build base query
     let q = supabaseAdmin
       .from("blog_posts")
-      .select("id,title,slug,excerpt,hero_image,author_id,reading_time,published_at,created_at,updated_at", { count: "exact" })
+      .select("id,title,slug,excerpt,hero_image,author_id,author_name,reading_time,published_at,created_at,updated_at", { count: "exact" })
       .eq("status", "published")
       .is("deleted_at", null)
       .order("published_at", { ascending: false })
@@ -152,8 +154,12 @@ const adminListSchema = z.object({
 });
 
 export const adminListPosts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((d: unknown) => adminListSchema.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ context, data }) => {
+    const roles = await loadUserRoles(context.userId);
+    requireAnyRole(roles);
+
     const page = data.page ?? 0;
     const pageSize = data.pageSize ?? 20;
     const search = data.search?.trim();
@@ -163,7 +169,7 @@ export const adminListPosts = createServerFn({ method: "POST" })
     const from = page * pageSize;
     const to = from + pageSize - 1;
 
-    let q = supabaseAdmin.from("blog_posts").select("id,title,slug,status,author_id,published_at,created_at,updated_at,deleted_at", { count: "exact" }).order("created_at", { ascending: false }).range(from, to);
+    let q = supabaseAdmin.from("blog_posts").select("id,title,slug,status,author_id,author_name,published_at,created_at,updated_at,deleted_at", { count: "exact" }).order("created_at", { ascending: false }).range(from, to);
 
     if (search) q = q.or(`title.ilike.%${search}%,excerpt.ilike.%${search}%,content_markdown.ilike.%${search}%`);
     if (status) q = q.eq("status", status);
@@ -203,6 +209,7 @@ const adminPostSchema = z.object({
   content_markdown: z.string().optional(),
   hero_image: z.string().optional(),
   author_id: z.string().uuid().optional(),
+  author_name: z.string().optional(),
   status: z.enum(["draft", "published", "scheduled", "archived"]).optional(),
   published_at: z.string().optional(),
   scheduled_for: z.string().optional(),
@@ -214,8 +221,12 @@ const adminPostSchema = z.object({
 });
 
 export const createPost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((d: unknown) => adminPostSchema.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ context, data }) => {
+    const roles = await loadUserRoles(context.userId);
+    requireAdminRole(roles);
+
     const payload = data as any;
     const now = new Date().toISOString();
     const status = payload.status ?? "published";
@@ -229,6 +240,7 @@ export const createPost = createServerFn({ method: "POST" })
       content_markdown: payload.content_markdown || null,
       hero_image: payload.hero_image || null,
       author_id: payload.author_id || null,
+      author_name: payload.author_name || null,
       status: status,
       published_at: publishedAt,
       scheduled_for: payload.scheduled_for || null,
@@ -257,8 +269,12 @@ export const createPost = createServerFn({ method: "POST" })
 const updatePostSchema = adminPostSchema.extend({ id: z.string().uuid() });
 
 export const updatePost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((d: unknown) => updatePostSchema.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ context, data }) => {
+    const roles = await loadUserRoles(context.userId);
+    requireAdminRole(roles);
+
     const payload = data as any;
     const now = new Date().toISOString();
 
@@ -272,6 +288,7 @@ export const updatePost = createServerFn({ method: "POST" })
         content_markdown: payload.content_markdown || null,
         hero_image: payload.hero_image || null,
         author_id: payload.author_id || null,
+        author_name: payload.author_name || null,
         status: "published",          // ← always published
         published_at: now,            // ← always now
         scheduled_for: null,          // ← clear any schedule
@@ -307,8 +324,12 @@ export const updatePost = createServerFn({ method: "POST" })
 const deleteSchema = z.object({ id: z.string().uuid() });
 
 export const deletePost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((d: unknown) => deleteSchema.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ context, data }) => {
+    const roles = await loadUserRoles(context.userId);
+    requireAdminRole(roles);
+
     const { id } = data;
 
     // Remove junction rows first (foreign-key safety)
@@ -326,13 +347,20 @@ export const deletePost = createServerFn({ method: "POST" })
 const uploadSchema = z.object({ filename: z.string(), base64: z.string(), contentType: z.string().optional() });
 
 export const uploadBlogImage = createServerFn({ method: "POST" })
+  // .middleware([requireSupabaseAuth])
   .validator((d: unknown) => uploadSchema.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ context, data }) => {
+    // const roles = await loadUserRoles(context.userId);
+    // requireAdminRole(roles);
+
     const { filename, base64, contentType } = data as any;
     const buffer = Buffer.from(base64, 'base64');
     const path = `public/${filename}`;
-    const { data: uploadData, error } = await supabaseAdmin.storage.from('blog-images').upload(path, buffer, { contentType });
-    if (error) throw new Error(error.message);
+    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage.from('blog-images').upload(path, buffer, {
+        contentType: contentType ?? 'image/jpeg',
+        upsert: true,
+      })
+    if (uploadError) throw new Error(uploadError.message);
     const { data: publicUrl } = supabaseAdmin.storage.from('blog-images').getPublicUrl(path);
     return { ok: true, path, publicUrl: publicUrl.publicUrl };
   });

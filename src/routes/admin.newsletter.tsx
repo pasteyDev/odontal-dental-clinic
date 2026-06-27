@@ -126,231 +126,203 @@ function Newsletter() {
     }
   }
 
-  return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold">Newsletter</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {activeSubscribers.length} active of {subscribers.length} subscribers
-          </p>
-        </div>
-        <Button onClick={exportCsv} variant="outline" className="rounded-full">
-          <Download className="h-4 w-4" /> Export CSV
-        </Button>
+ return (
+  <div>
+    {/* Header */}
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h1 className="font-serif text-3xl font-semibold">Newsletter</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {activeSubscribers.length} active of {subscribers.length} subscribers
+        </p>
       </div>
+      <Button onClick={exportCsv} variant="outline" className="rounded-full">
+        <Download className="h-4 w-4" /> Export CSV
+      </Button>
+    </div>
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <Card className="rounded-2xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-2">
-              <MailPlus className="h-5 w-5 text-primary" />
-              <h2 className="font-serif text-xl font-semibold">Compose campaign</h2>
-            </div>
-            <form
-              className="mt-5 grid gap-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                queueCampaign.mutate();
-              }}
-            >
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label>Type</Label>
-                  <Select
-                    value={form.kind}
-                    onValueChange={(kind) =>
-                      setForm((current) => ({
-                        ...current,
-                        kind: kind as typeof form.kind,
-                      }))
-                    }
-                  >
-                    <SelectTrigger className="mt-1.5">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {KINDS.map((kind) => (
-                        <SelectItem key={kind.value} value={kind.value}>
-                          {kind.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Campaign name</Label>
-                  <Input
-                    className="mt-1.5"
-                    required
-                    value={form.name}
-                    onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))}
-                  />
-                </div>
+    {/* Compose + Campaigns */}
+    <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+
+      {/* Compose */}
+      <Card className="rounded-2xl">
+        <CardContent className="p-5">
+          <div className="flex items-center gap-2.5 mb-5">
+            <MailPlus className="h-5 w-5 text-muted-foreground" />
+            <h2 className="font-serif text-lg font-semibold">Compose campaign</h2>
+          </div>
+
+          <form
+            className="grid gap-4"
+            onSubmit={(e) => { e.preventDefault(); queueCampaign.mutate(); }}
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[11px] uppercase tracking-widest text-muted-foreground">Type</Label>
+                <Select
+                  value={form.kind}
+                  onValueChange={(kind) => setForm((c) => ({ ...c, kind: kind as typeof form.kind }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {KINDS.map((k) => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
-              <div>
-                <Label>Subject</Label>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[11px] uppercase tracking-widest text-muted-foreground">Campaign name</Label>
                 <Input
-                  className="mt-1.5"
                   required
-                  value={form.subject}
-                  onChange={(e) => setForm((current) => ({ ...current, subject: e.target.value }))}
+                  value={form.name}
+                  onChange={(e) => setForm((c) => ({ ...c, name: e.target.value }))}
+                  placeholder="e.g. June update"
                 />
               </div>
-              <div>
-                <Label>Body</Label>
-                <Textarea
-                  className="mt-1.5 min-h-56"
-                  required
-                  value={form.body}
-                  onChange={(e) => setForm((current) => ({ ...current, body: e.target.value }))}
-                />
-              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[11px] uppercase tracking-widest text-muted-foreground">Subject</Label>
+              <Input
+                required
+                value={form.subject}
+                onChange={(e) => setForm((c) => ({ ...c, subject: e.target.value }))}
+                placeholder="What's new at Odontal…"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[11px] uppercase tracking-widest text-muted-foreground">Body</Label>
+              <Textarea
+                required
+                className="min-h-40 resize-y"
+                value={form.body}
+                onChange={(e) => setForm((c) => ({ ...c, body: e.target.value }))}
+                placeholder="Write your message…"
+              />
+            </div>
+
+            <div className="flex items-center justify-between border-t border-border pt-4">
+              <p className="text-xs text-muted-foreground">
+                Sends to <span className="font-medium text-foreground">{activeSubscribers.length}</span> subscribers
+              </p>
               <Button
                 type="submit"
                 disabled={queueCampaign.isPending || activeSubscribers.length === 0}
                 className="rounded-full"
               >
-                <MailPlus className="h-4 w-4" />
-                {queueCampaign.isPending ? "Queueing..." : "Queue campaign"}
+                <Send className="h-4 w-4" />
+                {queueCampaign.isPending ? "Queueing…" : "Queue campaign"}
               </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl">
-          <CardContent className="p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="font-serif text-xl font-semibold">Campaigns</h2>
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground">Batch</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={batchSize}
-                  onChange={(e) => setBatchSize(Number(e.target.value))}
-                  className="h-8 w-20"
-                />
-              </div>
             </div>
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3">Campaign</th>
-                    <th>Status</th>
-                    <th>Progress</th>
-                    <th>Updated</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {campaigns.map((campaign) => {
-                    const pending =
-                      campaign.recipient_count - campaign.sent_count - campaign.failed_count;
-                    const canSend = campaign.status !== "cancelled" && campaign.status !== "sent" && pending > 0;
-                    const canRetry = campaign.status !== "cancelled" && campaign.failed_count > 0;
-                    return (
-                      <tr key={campaign.id} className="border-t border-border align-top">
-                        <td className="px-4 py-3">
-                          <div className="font-medium">{campaign.name}</div>
-                          <div className="max-w-xs truncate text-xs text-muted-foreground">
-                            {campaign.subject}
-                          </div>
-                          {campaign.last_error && (
-                            <div className="mt-1 max-w-xs truncate text-xs text-destructive">
-                              {campaign.last_error}
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          <Badge variant={campaign.status === "sent" ? "default" : "secondary"}>
-                            {STATUS_LABELS[campaign.status] ?? campaign.status}
-                          </Badge>
-                        </td>
-                        <td className="text-xs text-muted-foreground">
-                          <span className="font-medium text-foreground">{campaign.sent_count}</span> sent
-                          <br />
-                          <span className="font-medium text-foreground">{campaign.failed_count}</span> failed
-                          <br />
-                          <span className="font-medium text-foreground">{Math.max(0, pending)}</span> pending
-                        </td>
-                        <td className="text-xs text-muted-foreground">
-                          {new Date(campaign.updated_at).toLocaleString()}
-                        </td>
-                        <td>
-                          <div className="flex flex-wrap gap-2">
-                            <Button
-                              size="sm"
-                              className="rounded-full"
-                              disabled={!canSend || busyId === `send:${campaign.id}`}
-                              onClick={() => runCampaignAction(campaign.id, "send")}
-                            >
-                              <Send className="h-4 w-4" /> Send batch
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="rounded-full"
-                              disabled={!canRetry || busyId === `retry:${campaign.id}`}
-                              onClick={() => runCampaignAction(campaign.id, "retry")}
-                            >
-                              <RotateCcw className="h-4 w-4" /> Retry
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="rounded-full"
-                              disabled={campaign.status === "cancelled" || campaign.status === "sent" || busyId === `cancel:${campaign.id}`}
-                              onClick={() => runCampaignAction(campaign.id, "cancel")}
-                            >
-                              <Ban className="h-4 w-4" /> Cancel
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {campaigns.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="p-6 text-center text-muted-foreground">
-                        No campaigns yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          </form>
+        </CardContent>
+      </Card>
 
-      <Card className="mt-5 rounded-2xl">
-        <CardContent className="p-0">
+      {/* Campaigns */}
+      <Card className="rounded-2xl">
+        <CardContent className="p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+            <h2 className="font-serif text-lg font-semibold">Campaigns</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Batch size</span>
+              <Input
+                type="number"
+                min={1}
+                max={50}
+                value={batchSize}
+                onChange={(e) => setBatchSize(Number(e.target.value))}
+                className="h-8 w-20 text-center"
+              />
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3">Email</th>
-                  <th>Subscribed</th>
-                  <th>Status</th>
+                  <th className="px-3 py-2.5">Campaign</th>
+                  <th className="py-2.5">Status</th>
+                  <th className="py-2.5">Progress</th>
+                  <th className="py-2.5" />
                 </tr>
               </thead>
               <tbody>
-                {subscribers.map((subscriber) => (
-                  <tr key={subscriber.id} className="border-t border-border">
-                    <td className="px-4 py-3">{subscriber.email}</td>
-                    <td className="text-muted-foreground">
-                      {new Date(subscriber.subscribed_at).toLocaleDateString()}
-                    </td>
-                    <td>{subscriber.active ? "Active" : "Inactive"}</td>
-                  </tr>
-                ))}
-                {subscribers.length === 0 && (
+                {campaigns.map((campaign) => {
+                  const pending = campaign.recipient_count - campaign.sent_count - campaign.failed_count;
+                  const total = campaign.recipient_count || 1;
+                  const pct = Math.round((campaign.sent_count / total) * 100);
+                  const canSend = campaign.status !== "cancelled" && campaign.status !== "sent" && pending > 0;
+                  const canRetry = campaign.status !== "cancelled" && campaign.failed_count > 0;
+                  return (
+                    <tr key={campaign.id} className="border-t border-border align-middle">
+                      <td className="px-3 py-3">
+                        <div className="font-medium">{campaign.name}</div>
+                        <div className="mt-0.5 max-w-[160px] truncate text-xs text-muted-foreground">
+                          {campaign.subject}
+                        </div>
+                        {campaign.last_error && (
+                          <div className="mt-1 max-w-[160px] truncate text-xs text-destructive">
+                            {campaign.last_error}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3">
+                        <Badge variant={campaign.status === "sent" ? "default" : "secondary"}>
+                          {STATUS_LABELS[campaign.status] ?? campaign.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3">
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                          <span className="font-medium text-foreground">{campaign.sent_count}</span> sent ·{" "}
+                          <span className="font-medium text-foreground">{Math.max(0, pending)}</span> pending
+                        </div>
+                        {/* Progress bar */}
+                        <div className="mt-1.5 h-1 w-24 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-foreground transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </td>
+                      <td className="py-3 pr-3">
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            size="sm"
+                            className="rounded-full"
+                            disabled={!canSend || busyId === `send:${campaign.id}`}
+                            onClick={() => runCampaignAction(campaign.id, "send")}
+                          >
+                            <Send className="h-3.5 w-3.5" /> Send
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-full px-2.5"
+                            disabled={!canRetry || busyId === `retry:${campaign.id}`}
+                            onClick={() => runCampaignAction(campaign.id, "retry")}
+                            title="Retry failed"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-full px-2.5"
+                            disabled={campaign.status === "cancelled" || campaign.status === "sent" || busyId === `cancel:${campaign.id}`}
+                            onClick={() => runCampaignAction(campaign.id, "cancel")}
+                            title="Cancel campaign"
+                          >
+                            <Ban className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {campaigns.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="p-6 text-center text-muted-foreground">
-                      No subscribers.
+                    <td colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                      No campaigns yet.
                     </td>
                   </tr>
                 )}
@@ -360,5 +332,56 @@ function Newsletter() {
         </CardContent>
       </Card>
     </div>
-  );
+
+    {/* Subscribers */}
+    <Card className="mt-4 rounded-2xl">
+      <CardContent className="p-0">
+        <div className="flex items-center justify-between px-5 py-4">
+          <h2 className="font-serif text-lg font-semibold">Subscribers</h2>
+          <div className="flex items-center gap-2">
+            <span className="rounded-lg bg-muted px-3 py-1 text-xs text-muted-foreground">
+              {activeSubscribers.length} active
+            </span>
+            <span className="rounded-lg bg-muted px-3 py-1 text-xs text-muted-foreground">
+              {subscribers.length - activeSubscribers.length} inactive
+            </span>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="px-5 py-2.5">Email</th>
+                <th className="py-2.5">Subscribed</th>
+                <th className="py-2.5">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {subscribers.map((sub) => (
+                <tr key={sub.id} className="border-t border-border">
+                  <td className="px-5 py-3">{sub.email}</td>
+                  <td className="py-3 text-muted-foreground">
+                    {new Date(sub.subscribed_at).toLocaleDateString()}
+                  </td>
+                  <td className="py-3">
+                    <Badge variant={sub.active ? "default" : "secondary"}>
+                      {sub.active ? "Active" : "Inactive"}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+              {subscribers.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="py-8 text-center text-muted-foreground">
+                    No subscribers yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+);
 }
