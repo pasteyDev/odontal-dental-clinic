@@ -101,6 +101,33 @@ export const listBookings = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+  export const getPatientDetail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const roles = await loadUserRoles(context.userId);
+    requireAnyRole(roles);
+
+    // Fetch patient
+    const { data: patient, error: pErr } = await supabaseAdmin
+      .from("patients")
+      .select("*")
+      .eq("id", data.id)
+      .single();
+    if (pErr || !patient) throw new Error("Patient not found.");
+
+    // Fetch all bookings for this patient matched by phone
+    const { data: bookings, error: bErr } = await supabaseAdmin
+      .from("bookings")
+      .select("*, services(name, price_ngn, duration_min)")
+      .eq("phone", patient.phone)
+      .order("preferred_date", { ascending: false });
+    if (bErr) throw new Error(bErr.message);
+
+    return { patient, bookings: bookings ?? [] };
+  });
+
+
 export const updateBookingStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) =>

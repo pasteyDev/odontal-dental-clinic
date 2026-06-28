@@ -1,54 +1,67 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { listBookings, updateBookingStatus } from "@/lib/admin.functions";
-import { EmailDialog } from "@/components/admin/EmailDialog";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatNGN } from "@/lib/clinic";
-import { toast } from "sonner";
+import { createFileRoute } from '@tanstack/react-router'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useServerFn } from '@tanstack/react-start'
+import { listBookings, updateBookingStatus } from '@/lib/admin.functions'
+import { EmailDialog } from '@/components/admin/EmailDialog'
+import { Card, CardContent } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { formatNGN } from '@/lib/clinic'
+import { toast } from 'sonner'
 
-export const Route = createFileRoute("/admin/bookings")({ component: Bookings });
+export const Route = createFileRoute('/admin/bookings')({ component: Bookings })
 
-const STATUSES = ["pending", "confirmed", "completed", "cancelled", "no_show"] as const;
+const STATUSES = [
+  'pending',
+  'confirmed',
+  'completed',
+  'cancelled',
+  'no_show',
+] as const
 
-type Status = typeof STATUSES[number];
+type Status = (typeof STATUSES)[number]
 
 const STATUS_STYLES: Record<Status, string> = {
-  pending:   "bg-yellow-50 text-yellow-700 border-yellow-200",
-  confirmed: "bg-blue-50 text-blue-700 border-blue-200",
-  completed: "bg-green-50 text-green-700 border-green-200",
-  cancelled: "bg-red-50 text-red-700 border-red-200",
-  no_show:   "bg-muted text-muted-foreground border-border",
-};
+  pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
+  completed: 'bg-green-50 text-green-700 border-green-200',
+  cancelled: 'bg-red-50 text-red-700 border-red-200',
+  no_show: 'bg-muted text-muted-foreground border-border',
+}
 
 function StatusBadge({ status }: { status: string }) {
-  const s = status as Status;
+  const s = status as Status
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${STATUS_STYLES[s] ?? "bg-muted text-muted-foreground border-border"}`}>
-      {s.replace("_", " ")}
+    <span
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${STATUS_STYLES[s] ?? 'bg-muted text-muted-foreground border-border'}`}
+    >
+      {s.replace('_', ' ')}
     </span>
-  );
+  )
 }
 
 function Bookings() {
-  const fn = useServerFn(listBookings);
-  const upd = useServerFn(updateBookingStatus);
-  const qc = useQueryClient();
+  const fn = useServerFn(listBookings)
+  const upd = useServerFn(updateBookingStatus)
+  const qc = useQueryClient()
   const { data = [], isLoading } = useQuery({
-    queryKey: ["bookings"],
+    queryKey: ['bookings'],
     queryFn: () => fn(),
-  });
+  })
 
   async function handleStatusChange(id: string, status: Status) {
     try {
-      await upd({ data: { id, status } });
-      toast.success("Status updated");
-      qc.invalidateQueries({ queryKey: ["bookings"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      await upd({ data: { id, status } })
+      toast.success('Status updated')
+      qc.invalidateQueries({ queryKey: ['bookings'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to update");
+      toast.error(e instanceof Error ? e.message : 'Failed to update')
     }
   }
 
@@ -60,7 +73,7 @@ function Bookings() {
           <h1 className="font-serif text-3xl font-semibold">Bookings</h1>
           {!isLoading && (
             <p className="mt-1 text-sm text-muted-foreground">
-              {data.length} booking{data.length !== 1 ? "s" : ""}
+              {data.length} booking{data.length !== 1 ? 's' : ''}
             </p>
           )}
         </div>
@@ -81,17 +94,23 @@ function Bookings() {
             </p>
           ) : (
             data.map((b) => {
-              const svc = (b as { services?: { name?: string; price_ngn?: number } | null }).services;
-              const serviceName = svc?.name ?? "your dental service";
+              const svc = (
+                b as { services?: { name?: string; price_ngn?: number } | null }
+              ).services
+              const serviceName = svc?.name ?? 'your dental service'
               return (
                 <Card key={b.id} className="rounded-2xl">
                   <CardContent className="p-4">
                     {/* Name + status */}
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="font-medium leading-tight">{b.patient_name}</p>
+                        <p className="font-medium leading-tight">
+                          {b.patient_name}
+                        </p>
                         {b.email && (
-                          <p className="mt-0.5 text-xs text-muted-foreground">{b.email}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {b.email}
+                          </p>
                         )}
                       </div>
                       <StatusBadge status={b.status} />
@@ -102,20 +121,32 @@ function Bookings() {
                     {/* Detail grid */}
                     <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                       <div>
-                        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Service</p>
-                        <p className="mt-0.5 text-sm">{svc?.name ?? "—"}</p>
+                        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                          Service
+                        </p>
+                        <p className="mt-0.5 text-sm">{svc?.name ?? '—'}</p>
                       </div>
                       <div>
-                        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Price</p>
-                        <p className="mt-0.5 text-sm">{formatNGN(b.price_ngn ?? 0)}</p>
+                        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                          Price
+                        </p>
+                        <p className="mt-0.5 text-sm">
+                          {formatNGN(b.price_ngn ?? 0)}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Date</p>
+                        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                          Date
+                        </p>
                         <p className="mt-0.5 text-sm">{b.preferred_date}</p>
-                        <p className="text-xs text-muted-foreground">{b.preferred_time}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {b.preferred_time}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Phone</p>
+                        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                          Phone
+                        </p>
                         <a
                           href={`tel:${b.phone}`}
                           className="mt-0.5 block text-sm text-primary hover:underline"
@@ -131,7 +162,9 @@ function Bookings() {
                     <div className="flex items-center justify-between gap-3">
                       <Select
                         value={b.status}
-                        onValueChange={(v) => handleStatusChange(b.id, v as Status)}
+                        onValueChange={(v) =>
+                          handleStatusChange(b.id, v as Status)
+                        }
                       >
                         <SelectTrigger className="h-8 w-36 text-xs">
                           <SelectValue />
@@ -139,7 +172,7 @@ function Bookings() {
                         <SelectContent>
                           {STATUSES.map((s) => (
                             <SelectItem key={s} value={s} className="text-xs">
-                              {s.replace("_", " ")}
+                              {s.replace('_', ' ')}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -160,7 +193,7 @@ function Bookings() {
                     </div>
                   </CardContent>
                 </Card>
-              );
+              )
             })
           )}
         </div>
@@ -187,37 +220,61 @@ function Bookings() {
                 <tbody>
                   {data.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                      <td
+                        colSpan={8}
+                        className="p-8 text-center text-muted-foreground"
+                      >
                         No bookings yet.
                       </td>
                     </tr>
                   ) : (
                     data.map((b) => {
-                      const svc = (b as { services?: { name?: string; price_ngn?: number } | null }).services;
-                      const serviceName = svc?.name ?? "your dental service";
+                      const svc = (
+                        b as {
+                          services?: {
+                            name?: string
+                            price_ngn?: number
+                          } | null
+                        }
+                      ).services
+                      const serviceName = svc?.name ?? 'your dental service'
                       return (
-                        <tr key={b.id} className="border-t border-border align-middle">
+                        <tr
+                          key={b.id}
+                          className="border-t border-border align-middle"
+                        >
                           <td className="px-4 py-3">
                             <p className="font-medium">{b.patient_name}</p>
                             {b.email && (
-                              <p className="text-xs text-muted-foreground">{b.email}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {b.email}
+                              </p>
                             )}
                           </td>
                           <td className="py-3">
-                            <a href={`tel:${b.phone}`} className="hover:underline">
+                            <a
+                              href={`tel:${b.phone}`}
+                              className="hover:underline"
+                            >
                               {b.phone}
                             </a>
                           </td>
-                          <td className="py-3">{svc?.name ?? "—"}</td>
+                          <td className="py-3">{svc?.name ?? '—'}</td>
                           <td className="py-3">
                             <p>{b.preferred_date}</p>
-                            <p className="text-xs text-muted-foreground">{b.preferred_time}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {b.preferred_time}
+                            </p>
                           </td>
-                          <td className="py-3">{formatNGN(b.price_ngn ?? 0)}</td>
+                          <td className="py-3">
+                            {formatNGN(b.price_ngn ?? 0)}
+                          </td>
                           <td className="py-3">
                             <Select
                               value={b.status}
-                              onValueChange={(v) => handleStatusChange(b.id, v as Status)}
+                              onValueChange={(v) =>
+                                handleStatusChange(b.id, v as Status)
+                              }
                             >
                               <SelectTrigger className="h-8 w-32">
                                 <SelectValue />
@@ -225,7 +282,7 @@ function Bookings() {
                               <SelectContent>
                                 {STATUSES.map((s) => (
                                   <SelectItem key={s} value={s}>
-                                    {s.replace("_", " ")}
+                                    {s.replace('_', ' ')}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -250,7 +307,7 @@ function Bookings() {
                             />
                           </td>
                         </tr>
-                      );
+                      )
                     })
                   )}
                 </tbody>
@@ -260,5 +317,5 @@ function Bookings() {
         </Card>
       )}
     </div>
-  );
+  )
 }

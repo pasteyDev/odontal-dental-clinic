@@ -1,6 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { sendEmail } from "@/lib/email"
+
+const ADMIN_EMAIL = (process.env.ADMIN_NOTIFICATION_EMAIL ?? "")
+  .split(",")
+  .map((e) => e.trim())
+  .filter(Boolean)
 
 const bookingSchema = z.object({
   service_id: z.string().uuid(),
@@ -80,6 +86,69 @@ export const submitBooking = createServerFn({ method: "POST" })
       status: "pending",
     });
     if (bErr) throw new Error(bErr.message);
+
+     sendEmail({
+      to: ADMIN_EMAIL,
+      subject: `New booking - ${data.patient_name} (${data.preferred_date})`,
+      html: `
+        <div style="font-family:sans-serif;max-width:560px;margin:0 auto;">
+          <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">
+            New appointment booked
+          </h2>
+          <p style="color:#666;font-size:14px;margin-top:0;">
+            A new appointment has been submitted and is awaiting confirmation.
+          </p>
+
+          <table style="width:100%;border-collapse:collapse;margin-top:24px;font-size:14px;">
+            <tr style="border-bottom:1px solid #eee;">
+              <td style="padding:10px 0;color:#999;width:140px;">Patient</td>
+              <td style="padding:10px 0;font-weight:500;">${data.patient_name}</td>
+            </tr>
+            <tr style="border-bottom:1px solid #eee;">
+              <td style="padding:10px 0;color:#999;">Phone</td>
+              <td style="padding:10px 0;">${data.phone}</td>
+            </tr>
+            <tr style="border-bottom:1px solid #eee;">
+              <td style="padding:10px 0;color:#999;">Email</td>
+              <td style="padding:10px 0;">${data.email || "—"}</td>
+            </tr>
+            <tr style="border-bottom:1px solid #eee;">
+              <td style="padding:10px 0;color:#999;">Service</td>
+              <td style="padding:10px 0;">${svc.name}</td>
+            </tr>
+            <tr style="border-bottom:1px solid #eee;">
+              <td style="padding:10px 0;color:#999;">Date</td>
+              <td style="padding:10px 0;">${data.preferred_date}</td>
+            </tr>
+            <tr style="border-bottom:1px solid #eee;">
+              <td style="padding:10px 0;color:#999;">Time</td>
+              <td style="padding:10px 0;">${data.preferred_time}</td>
+            </tr>
+            ${data.notes ? `
+            <tr>
+              <td style="padding:10px 0;color:#999;">Notes</td>
+              <td style="padding:10px 0;">${data.notes}</td>
+            </tr>` : ''}
+          </table>
+
+          <div style="margin-top:28px;">
+            <a
+              href="${process.env.VITE_PUBLIC_SITE_URL ?? ''}/admin/bookings"
+              style="display:inline-block;background:#000;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:500;"
+            >
+              View in dashboard →
+            </a>
+          </div>
+
+          <p style="margin-top:32px;font-size:12px;color:#bbb;">
+            Odontal Dental Clinic · This is an automated notification.
+          </p>
+        </div>
+      `,
+    }).catch((err) => {
+      // Log but don't throw — booking already succeeded
+      console.error("[Admin notification email failed]", err)
+    })
 
     return { ok: true, service: svc.name };
   });
@@ -200,3 +269,4 @@ export const getDailyRandomReviews = createServerFn({ method: "GET" }).handler(a
   const ordered = ids.map((i) => byId.get(i)).filter(Boolean);
   return ordered;
 });
+

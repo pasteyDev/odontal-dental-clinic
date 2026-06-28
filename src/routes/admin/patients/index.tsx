@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { useState } from 'react'
@@ -6,12 +6,21 @@ import { listPatients } from '@/lib/admin.functions'
 import { EmailDialog } from '@/components/admin/EmailDialog'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Search, Phone, Mail, CalendarDays, Activity } from 'lucide-react'
+import {
+  Search,
+  Phone,
+  Mail,
+  CalendarDays,
+  Activity,
+  ChevronRight,
+} from 'lucide-react'
 
-export const Route = createFileRoute('/admin/patients')({ component: Patients })
-
-function Patients() {
+export const Route = createFileRoute('/admin/patients/')({
+  component: PatientsPage,
+})
+function PatientsPage() {
   const fn = useServerFn(listPatients)
+  const navigate = useNavigate()
   const { data = [], isLoading } = useQuery({
     queryKey: ['patients'],
     queryFn: () => fn(),
@@ -24,9 +33,12 @@ function Patients() {
       .includes(q.toLowerCase()),
   )
 
+  function goToPatient(id: string) {
+    navigate({ to: '/admin/patients/$patientId', params: { patientId: id } })
+  }
+
   return (
     <div>
-      {/* Header */}
       <div>
         <h1 className="font-serif text-3xl font-semibold">Patients</h1>
         {!isLoading && (
@@ -36,7 +48,6 @@ function Patients() {
         )}
       </div>
 
-      {/* Search */}
       <div className="relative mt-5 max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -53,7 +64,7 @@ function Patients() {
         </p>
       )}
 
-      {/* ── Mobile: card list ──────────────────────────────── */}
+      {/* ── Mobile cards ──────────────────────────────────── */}
       {!isLoading && (
         <div className="mt-5 flex flex-col gap-3 md:hidden">
           {filtered.length === 0 ? (
@@ -62,12 +73,14 @@ function Patients() {
             </p>
           ) : (
             filtered.map((p) => (
-              <Card key={p.id} className="rounded-2xl">
+              <Card
+                key={p.id}
+                className="cursor-pointer rounded-2xl transition-shadow hover:shadow-md"
+                onClick={() => goToPatient(p.id)}
+              >
                 <CardContent className="p-4">
-                  {/* Name row */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      {/* Initials avatar */}
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-foreground">
                         {p.name.slice(0, 2).toUpperCase()}
                       </div>
@@ -78,25 +91,16 @@ function Patients() {
                         </p>
                       </div>
                     </div>
-                    <EmailDialog
-                      toEmail={p.email}
-                      toName={p.name}
-                      initialSubject="A note from Odontal Dental Clinic"
-                      initialBody={`Hello ${p.name},\n\nThank you for choosing Odontal Dental Clinic.\n\nOdontal Dental Clinic`}
-                    />
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </div>
 
                   <div className="my-3 h-px bg-border" />
 
-                  {/* Details */}
                   <div className="flex flex-col gap-2">
-                    <a
-                      href={`tel:${p.phone}`}
-                      className="flex items-center gap-2 text-sm hover:underline"
-                    >
+                    <div className="flex items-center gap-2 text-sm">
                       <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       {p.phone}
-                    </a>
+                    </div>
                     {p.email && (
                       <div className="flex items-center gap-2 text-sm">
                         <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -117,7 +121,7 @@ function Patients() {
         </div>
       )}
 
-      {/* ── Desktop: table ─────────────────────────────────── */}
+      {/* ── Desktop table ─────────────────────────────────── */}
       {!isLoading && (
         <Card className="mt-5 hidden rounded-2xl md:block">
           <CardContent className="p-0">
@@ -147,7 +151,8 @@ function Patients() {
                     filtered.map((p) => (
                       <tr
                         key={p.id}
-                        className="border-t border-border align-middle"
+                        className="cursor-pointer border-t border-border align-middle transition-colors hover:bg-accent/40"
+                        onClick={() => goToPatient(p.id)}
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
@@ -157,14 +162,7 @@ function Patients() {
                             <span className="font-medium">{p.name}</span>
                           </div>
                         </td>
-                        <td className="py-3">
-                          <a
-                            href={`tel:${p.phone}`}
-                            className="hover:underline"
-                          >
-                            {p.phone}
-                          </a>
-                        </td>
+                        <td className="py-3">{p.phone}</td>
                         <td className="py-3 text-muted-foreground">
                           {p.email ?? '—'}
                         </td>
@@ -177,7 +175,10 @@ function Patients() {
                         <td className="py-3 text-xs text-muted-foreground">
                           {new Date(p.first_seen).toLocaleDateString()}
                         </td>
-                        <td className="py-3 pr-4">
+                        <td
+                          className="py-3 pr-4"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <EmailDialog
                             toEmail={p.email}
                             toName={p.name}
